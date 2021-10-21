@@ -24,12 +24,13 @@ class SRPN:
                     self.process_command_multi(list(char))
 
     def process_command_multi(self, chars):
-        """ for processing any input of multiple commands """    
-        def reg_check(temp_operand): #processes a temporary stored operand
+        """ for processing any input of multiple commands """
+        def tempint_check(temp_operand): #processes a temporary stored operand
             if temp_operand: self.process_operand(temp_operand)
             return ''
         def process_operators():
-            for operator, _, _, update in self.operator_stack.get():
+            sorted = self.operator_stack.get_sort()
+            for operator, _, _, update in sorted:
                 if update: #update value
                     self.regeq = self.operand_stack.peek()
                 self.process_operator(operator)
@@ -38,23 +39,23 @@ class SRPN:
         temp_operand = '' #reset for each set of commands
         for i, cha in enumerate(chars):
             if is_int(cha) or (cha=='-' and len(chars)>=1 and is_int(chars[i+1])
-            and (len(chars)>=2 and not is_int(chars[i-1]))  
+            and (len(chars)>=2 and not is_int(chars[i-1]))
             ):
                 temp_operand+= cha
             else:
-                temp_operand = reg_check(temp_operand) 
+                temp_operand = tempint_check(temp_operand)
                 if cha=='r': #treat r like another int
                     self.process_operand(cha)
                 elif cha in consts.OPERATOR_LIST: #cha an operator
-                    self.operator_stack.push(cha) 
+                    self.operator_stack.push(cha)
                     if cha=='d':
                         process_operators()
                 else: #cha is not a operator nor an operand
                     self.process_unknown(cha)
 
-        reg_check(temp_operand)
+        tempint_check(temp_operand)
         process_operators()
-        
+
     def process_command_singular(self, char):
         """ for processing any input of just a singular command """
         if is_int(char) or char=='r':
@@ -79,7 +80,7 @@ class SRPN:
         elif operator=='d':
             self.operand_stack.display()
         else:
-            c = None
+            c,b,a = None,None,None
             try:
                 b = self.operand_stack.pop()
                 a = self.operand_stack.pop()
@@ -87,7 +88,7 @@ class SRPN:
             except IndexError:
                 print("Stack underflow.")
 
-            if c is None:
+            if c is None: #in the case of a failed compution return unused values to the stack
                 if a is not None:
                     self.process_operand(a)
                 if b is not None:
@@ -138,7 +139,7 @@ class SRPN:
 
 #This is the entry point for the program.
 #Do not edit the below
-#slightly edited, should be fine lol
+#slightly edited, hopefully fine
 if __name__ == "__main__":
     srpn = SRPN()
     while True:

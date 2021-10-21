@@ -35,36 +35,34 @@ class Stack:
         return self.get_len() == 0
 
 class OperatorStack(Stack):
-    ranking = {'d': 0, '-': 1, '+': 2, '*': 3, '/': 4, '^': 5, '%': 6, '=': 7}
-    #d updates everything
-
-    def pop(self):
-        return self.stack.pop() #as they are stored as lists (see fn push)
-
-    def get(self):
-        self.sort()
-        return [self.pop() for i in range(len(self.stack))]
+    def __init__(self):
+        super().__init__()
+        self.ranking = {'=': 0, 'd': 0, '-': 1, '+': 2,
+                        '*': 3, '/': 4, '^': 5, '%': 6}
+        self.accum = {'-': 0, '+': 0, '*': 0,
+                        '/': 0, '^': 0, '%': 0}
 
     def get_rank(self, operator):
-        if operator == '=': 
-            for i in range(len(self.stack), 0, -1):
-                if self.stack[i-1][0] != '=': #find an operator not '=' already in the stack
-                    return self.stack[i-1][1] #its ranking
-        return self.ranking[operator] 
+        return self.ranking[operator]
         
     def push(self, operator):
         rank = self.get_rank(operator)
-        if operator=="=":
-            update = False
-            for i in range(len(self.stack), 0, -1):
-                if self.stack[i-1][1] > rank: 
-                    update = True
-                    break
-
-            self.stack.append([operator, rank, 2, update])
+        if operator in ["=", 'd']:
+            self.stack.append([operator, rank, 0, False])
         else:
-            self.stack.append([operator, rank, 1, False])
+            update = any(rank < op_rank for op_rank in [x[1] for x in self.stack])
+            accum = self.accum[operator]
+            self.accum[operator] -= 1
+            self.stack.append([operator, rank, accum, update])
 
-    def sort(self):
-        """ sorts the ranking list by their relative ranking """
-        self.stack.sort(key=lambda x:(x[1], x[2])) #to sort both
+    def get_sort(self):
+        """ sorts the ranking list by their relative ranking while keeping '=' static"""
+        y = [op for op in self.stack if op[0] != '=']
+        y.sort(key=lambda x:(x[1], x[2]))
+
+        sorted_stack = [op if op[0]=='=' else y.pop() for op in self.stack]
+        self.stack = []
+        return sorted_stack
+        #this maybe workey
+
+        #self.stack.sort(key=lambda x:(x[1], x[2])) #to sort both
