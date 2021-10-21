@@ -2,7 +2,6 @@
 from thestack import Stack, OperatorStack
 from functions import is_int
 import consts
-from math import floor 
 
 class SRPN:
     """ Calculator Object """
@@ -30,8 +29,9 @@ class SRPN:
             if temp_operand: self.process_operand(temp_operand)
             return ''
         def process_operators():
-            operators = self.operator_stack.get()
-            for operator in operators:
+            for operator, _, _, update in self.operator_stack.get():
+                if update: #update value
+                    self.regeq = self.operand_stack.peek()
                 self.process_operator(operator)
             self.regeq = self.operand_stack.peek()
 
@@ -45,22 +45,16 @@ class SRPN:
                 temp_operand = reg_check(temp_operand) 
                 if cha=='r': #treat r like another int
                     self.process_operand(cha)
-                    
-                elif cha=='d':
-                    process_operators()
-                    self.operand_stack.display()
-                elif cha=='=':
-                    print(self.regeq if self.regeq else self.operand_stack.peek())
-
                 elif cha in consts.OPERATOR_LIST: #cha an operator
-                    self.operator_stack.push(cha)
+                    self.operator_stack.push(cha) 
+                    if cha=='d':
+                        process_operators()
                 else: #cha is not a operator nor an operand
                     self.process_unknown(cha)
 
         reg_check(temp_operand)
         process_operators()
         
-
     def process_command_singular(self, char):
         """ for processing any input of just a singular command """
         if is_int(char) or char=='r':
