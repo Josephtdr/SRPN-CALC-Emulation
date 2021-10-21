@@ -1,106 +1,136 @@
 """ SRPN CALCULATOR """
-from thestack import Stack
+from thestack import Stack, OperatorStack
 from functions import is_int
 import consts
+from math import floor 
 
 class SRPN:
     """ Calculator Object """
-    def __init__(self):
-        self.operand_stack = Stack()
-        self.randpos = 0
-        self.foundhash = False
-        self.rega, self.regb = '',''
-        self.regoperator = ''
-        self.regeq = ''
+    operand_stack = Stack()
+    operator_stack = OperatorStack()
+    randpos = 0
+    foundhash = False
+    regeq = ''
 
     def process_command(self, command):
         """ parses a command and runs the relavent functions """
-        def reg_check(temp_operand): #processes a temporary stored operand
-            if temp_operand != '':
-                self.regeq = temp_operand
-                self.process_operand(temp_operand)
-            if self.regoperator:
-                self.process_operator()
-            return ''
-
         for char in command.split(' '):
             if char == '#':
                 self.foundhash = not self.foundhash
             elif not self.foundhash:
-                if char=='=':
-                    self.operand_stack.peek()
-                else:
-                    temp_operand = '' #reset for each set of commands
-                    chars = list(char)
-                    for i, cha in enumerate(chars):
-                        if is_int(cha) or (cha=='-' and i==0 and
-                            len(chars)>1 and is_int(chars[i+1])):
-                            temp_operand+= cha
-                        elif cha=='r': #treat r like another int
-                            temp_operand = reg_check(temp_operand)
-                            self.process_operand(self.get_randint())
-                        elif cha in consts.OPERATOR_LIST: #cha an operator
-                            temp_operand = reg_check(temp_operand)
-                            self.regoperator = cha
-                        else: #cha is not a operator nor an operand
-                            self.process_char(cha)
-                    reg_check(temp_operand)
+                if is_int(char) or len(char)==1:
+                    self.process_command_singular(char)
+        
+                elif len(char)>1:
+                    self.process_command_multi(list(char))
 
-    def process_char(self, char):
+    def process_command_multi(self, chars):
+        """ for processing any input of multiple commands """    
+        def reg_check(temp_operand): #processes a temporary stored operand
+            if temp_operand: self.process_operand(temp_operand)
+            return ''
+        def process_operators():
+            operators = self.operator_stack.get()
+            for operator in operators:
+                self.process_operator(operator)
+            self.regeq = self.operand_stack.peek()
+
+        temp_operand = '' #reset for each set of commands
+        for i, cha in enumerate(chars):
+            if is_int(cha) or (cha=='-' and len(chars)>=1 and is_int(chars[i+1])
+            and (len(chars)>=2 and not is_int(chars[i-1]))  
+            ):
+                temp_operand+= cha
+            else:
+                temp_operand = reg_check(temp_operand) 
+                if cha=='r': #treat r like another int
+                    self.process_operand(cha)
+                    
+                elif cha=='d':
+                    process_operators()
+                    self.operand_stack.display()
+                elif cha=='=':
+                    print(self.regeq if self.regeq else self.operand_stack.peek())
+
+                elif cha in consts.OPERATOR_LIST: #cha an operator
+                    self.operator_stack.push(cha)
+                else: #cha is not a operator nor an operand
+                    self.process_unknown(cha)
+
+        reg_check(temp_operand)
+        process_operators()
+        
+
+    def process_command_singular(self, char):
+        """ for processing any input of just a singular command """
+        if is_int(char) or char=='r':
+            self.process_operand(char)
+        elif char=='=':
+            print(self.operand_stack.peek())
+        elif char in consts.OPERATOR_LIST:
+            self.process_operator(char)
+        else:
+            self.process_unknown(char)
+
+    def process_unknown(self, char):
         """ processes an unidentified char """
         if char!=' ':
             print('Unrecognised operator or operand "{}".'.format(char))
 
-    def process_operator(self):
+    def process_operator(self, operator):
         """ processes an operator """
-        if self.regoperator=='=':
-            if self.regeq != '':
-                print(self.regeq)
-            else:
-                self.operand_stack.peek()
-        elif self.regoperator=='d':
+        if operator=='=': #only '=' from commmand_multi sent here
+            print(self.regeq if self.regeq else self.operand_stack.peek())
+
+        elif operator=='d':
             self.operand_stack.display()
         else:
             c = None
             try:
-                self.regb = self.operand_stack.pop()
-                self.rega = self.operand_stack.pop()
-                c = self.compute()
+                b = self.operand_stack.pop()
+                a = self.operand_stack.pop()
+                c = self.compute(operator, a, b)
             except IndexError:
                 print("Stack underflow.")
 
             if c is None:
-                if self.rega != '':
-                    self.process_operand(self.rega)
-                if self.regb != '':
-                    self.process_operand(self.regb)
+                if a is not None:
+                    self.process_operand(a)
+                if b is not None:
+                    self.process_operand(b)
             else:
-                self.process_operand(c)
-        self.emptyreg()
+                self.operand_stack.push(c)
 
     def process_operand(self, operand):
-        """ pushes a given operand to the stack """
+        """ processes an operand """
+        if operand=='r':
+            operand = self.get_randint()
+        self.regeq = operand
         self.operand_stack.push(operand)
 
-    def compute(self):
-        """ computes a new operand with the currently stored operator """
-        if self.regoperator=="+":
-            return self.rega+self.regb
-        if self.regoperator=="-":
-            return self.rega-self.regb
-        if self.regoperator=="*":
-            return self.rega*self.regb
-        if self.regoperator=="/":
+    def compute(self, operator, a, b):
+        """ computes the currently stored operand """
+        if operator=="+":
+            return a+b
+        if operator=="-":
+            return a-b
+        if operator=="*":
+            return a*b
+        if operator=="/":
             try:
-                return self.rega//self.regb
+                return a/b
             except ZeroDivisionError:
                 print("Divide by 0.")
                 return None
-        if self.regoperator=="%":
-            return self.rega%self.regb
-        if self.regoperator=="^":
-            if self.regb >= 0:
-                return self.rega**self.regb
+        if operator=="%":
+            if not b.is_integer():
+                print("Floating point exception (core dumped)")
+                raise Exception('Using mod with a float.')
+            else:    
+                return a%b
+        if operator=="^":
+            if b >= 0:
+                return a**b
             else:
                 print("Negative power.")
                 return None
@@ -110,10 +140,6 @@ class SRPN:
         randint = consts.RANDLIST[self.randpos]
         self.randpos = (self.randpos + 1) % len(consts.RANDLIST)
         return randint
-
-    def emptyreg(self):
-        """ resets the 'registry' values """
-        self.rega, self.regb, self.regoperator = '','',''
 
 
 #This is the entry point for the program.
