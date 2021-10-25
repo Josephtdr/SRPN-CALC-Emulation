@@ -1,7 +1,7 @@
 from functions import saturation
-from math import floor
 
 class Stack:
+    """ Custom Stack for operands """
     def __init__(self):
         self.stack = []
 
@@ -9,7 +9,7 @@ class Stack:
         if self.is_empty():
             return "Stack empty."
         else:
-            return floor(self.stack[-1])
+            return int(self.stack[-1])
 
     def push(self, operand):
         if not self.is_full():
@@ -20,12 +20,12 @@ class Stack:
     def pop(self):
         return self.stack.pop()
 
-    def display(self): #d updates everything in regards to operator stackings
+    def display(self):
         if self.is_empty():
             print("-2147483648")
         else:
             for operand in self.stack:
-                print(floor(operand))
+                print(int(operand))
 
     def get_len(self):
         return len(self.stack)
@@ -35,6 +35,7 @@ class Stack:
         return self.get_len() == 0
 
 class OperatorStack(Stack):
+    """ Modified from above custom Stack for operators """
     def __init__(self):
         super().__init__()
         self.ranking = {'=': 0, 'd': 0, '-': 1, '+': 2,
@@ -56,13 +57,10 @@ class OperatorStack(Stack):
             self.stack.append([operator, rank, accum, update])
 
     def get_sort(self):
-        """ sorts the ranking list by their relative ranking while keeping '=' static"""
-        y = [op for op in self.stack if op[0] != '=']
-        y.sort(key=lambda x:(x[1], x[2]))
+        """ sorts the stack by their relative rankings while keeping '=' static"""
+        templist = [op for op in self.stack if op[0] != '=']
+        templist.sort(key=lambda x:(x[1], x[2]))
 
-        sorted_stack = [op if op[0]=='=' else y.pop() for op in self.stack]
+        sorted_stack = [op if op[0]=='=' else templist.pop() for op in self.stack]
         self.stack = []
         return sorted_stack
-        #this maybe workey
-
-        #self.stack.sort(key=lambda x:(x[1], x[2])) #to sort both
