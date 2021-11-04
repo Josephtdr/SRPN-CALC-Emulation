@@ -35,7 +35,7 @@ class Stack:
         return self.get_len() == 0
 
 class OperatorStack(Stack):
-    """ Modified from above custom Stack for operators """
+    """ Modified from above custom Stack for operators in SRPNADV """
     def __init__(self):
         super().__init__()
         self.ranking = {'=': 0, 'd': 0, '-': 1, '+': 2,
@@ -45,13 +45,20 @@ class OperatorStack(Stack):
 
     def get_rank(self, operator):
         return self.ranking[operator]
-        
+
+    def get_previous_rank(self):
+        """ excludes operators '=' and 'd' """
+        for op_rank in reversed([x[1] for x in self.stack]):
+                if op_rank > 0:
+                    return op_rank
+        return 0
+
     def push(self, operator):
         rank = self.get_rank(operator)
         if operator in ["=", 'd']:
             self.stack.append([operator, rank, 0, False])
         else:
-            update = any(rank < op_rank for op_rank in [x[1] for x in self.stack])
+            update = rank < self.get_previous_rank()
             accum = self.accum[operator]
             self.accum[operator] -= 1
             self.stack.append([operator, rank, accum, update])
