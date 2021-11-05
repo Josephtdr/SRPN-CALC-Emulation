@@ -40,8 +40,6 @@ class OperatorStack(Stack):
         super().__init__()
         self.ranking = {'=': 0, 'd': 0, '-': 1, '+': 2,
                         '*': 3, '/': 4, '^': 5, '%': 6}
-        self.accum = {'-': 0, '+': 0, '*': 0,
-                        '/': 0, '^': 0, '%': 0}
 
     def get_rank(self, operator):
         return self.ranking[operator]
@@ -56,18 +54,36 @@ class OperatorStack(Stack):
     def push(self, operator):
         rank = self.get_rank(operator)
         if operator in ["=", 'd']:
-            self.stack.append([operator, rank, 0, False])
+            self.stack.append([operator, rank, False])
         else:
             update = rank < self.get_previous_rank()
-            accum = self.accum[operator]
-            self.accum[operator] -= 1
-            self.stack.append([operator, rank, accum, update])
+            self.stack.append([operator, rank, update])
 
     def get_sort(self):
+        """ recursive sorter thingy"""
+        def mini_sort(tbseperated):
+            if len(tbseperated)<=1:
+                return tbseperated
+
+            i = len(tbseperated) - 1
+            rank = tbseperated[i][1]
+            comparrank = tbseperated[i-1][1]
+            lowestcomprank = comparrank
+
+            while rank>comparrank and comparrank<=lowestcomprank and i>0:
+                if lowestcomprank>comparrank:
+                    lowestcomprank=comparrank
+                tbseperated[i], tbseperated[i-1] = tbseperated[i-1], tbseperated[i]
+                i -= 1
+                rank = tbseperated[i][1]
+                comparrank = tbseperated[i-1][1]
+                
+            return mini_sort(tbseperated[:i]) + mini_sort(tbseperated[i:])
+
         """ sorts the stack by their relative rankings while keeping '=' static"""
         templist = [op for op in self.stack if op[0] != '=']
-        templist.sort(key=lambda x:(x[1], x[2]))
-
-        sorted_stack = [op if op[0]=='=' else templist.pop() for op in self.stack]
+        othertemp = mini_sort(templist)
+        othertemp.reverse()
+        sorted_stack = [op if op[0]=='=' else othertemp.pop() for op in self.stack]
         self.stack = []
         return sorted_stack

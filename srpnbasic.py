@@ -64,7 +64,7 @@ class SRPN:
                 self.operand_stack.push(c)
 
     def process_operand(self, operand):
-        """ processes an operand """
+        """ pushes an operand to the stack """
         if operand=='r':
             operand = self.get_randint()
         self.operand_stack.push(operand)

@@ -20,7 +20,7 @@ class SRPNADV(SRPN):
         def process_operator_stack():
             """ computes the operators in sorted order """
             sorted_operators = self.operator_stack.get_sort()
-            for operator, _, _, update in sorted_operators:
+            for operator, _, update in sorted_operators:
                 if update: #update value
                     self.regeq = self.operand_stack.peek()
                 self.process_operator(operator)
@@ -46,13 +46,13 @@ class SRPNADV(SRPN):
         process_operator_stack()
 
     def process_operator(self, operator):
-        if operator=='=': #only '=' from commmand_multi sent here
+        if operator=='=': #only '=' from _commmand_multi sent here
             print(self.regeq if self.regeq else self.operand_stack.peek())
         else:
             super().process_operator(operator)
 
     def process_operand(self, operand):
-        """ processes an operand """
+        """ pushes an operand to the stack """
         if operand=='r':
             operand = self.get_randint()
         self.regeq = operand
